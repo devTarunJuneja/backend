@@ -23,9 +23,8 @@ def upload_image():
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(file_path)
 
-    # Full absolute path to access uploaded image from frontend
-    file_url = f"https://{request.host}/uploads/{filename}"
-
+    # For Railway, the hostname is dynamic; just return relative path
+    file_url = f"/uploads/{filename}"
     return jsonify({'url': file_url})
 
 @app.route('/uploads/<filename>')
