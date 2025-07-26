@@ -1,4 +1,1 @@
-Flask
-flask-cors
-Werkzeug
-gunicorn
+web: gunicorn app:app
