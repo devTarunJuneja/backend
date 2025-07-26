@@ -1,35 +1,37 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import os
-from datetime import datetime
 from werkzeug.utils import secure_filename
+from datetime import datetime
+import os
 
 app = Flask(__name__)
 CORS(app)
 
 UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image file provided'}), 400
+    if 'image' not in request.files or 'image_id' not in request.form:
+        return jsonify({'error': 'Missing image or image_id'}), 400
 
-    file = request.files['image']
-    image_id = request.form.get('image_id', 'default_id')
+    image = request.files['image']
+    image_id = request.form['image_id']
 
-    filename = secure_filename(f"{image_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
+    filename = secure_filename(f"{image_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{image.filename}")
+    save_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    image.save(save_path)
 
-    # For Railway, the hostname is dynamic; just return relative path
-    file_url = f"/uploads/{filename}"
-    return jsonify({'url': file_url})
+    return jsonify({
+        'url': f"/uploads/{filename}"
+    }), 200
 
 @app.route('/uploads/<filename>')
-def uploaded_file(filename):
+def serve_uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    # Use environment PORT if Railway provides it
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
